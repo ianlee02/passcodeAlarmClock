@@ -75,6 +75,9 @@ void loop() {
   hourVal = digitalRead(hourButton);
   alarmSetVal = digitalRead(alarmSetButton);
   lcd.clear();
+  if (alarmSetVal == HIGH) {
+    alarmSetMode = 1 - alarmSetMode;
+  }
   if (alarmSetMode == 1) {
     timeInHr = timeInHr;
     timeInMin = timeInMin;
@@ -86,63 +89,62 @@ void loop() {
         alarmArmed = false;
       }
     }
-  }
-  if (timeInSec == 60) {
-    timeInMin++;
-    timeInSec = timeInSec % 60;
-  }
-  if (timeInMin >= 60) {
-    timeInHr++;
-    timeInMin = timeInMin % 60;
-  }
-  if (timeInHr >= 24) {
-    timeInHr = 0;
-  }
-  lcd.setCursor(6, 1);
-  if (timeInHr < 10) {
-    lcd.print("0");
-  }
-  lcd.print(timeInHr);
-  lcd.print(":");
-  if (timeInMin < 10) {
-    lcd.print("0");
-  }
-  lcd.print(timeInMin);
-  lcd.print(":");
-  if (timeInSec < 10) {
-    lcd.print("0");
-  }
-  lcd.print(timeInSec);
-  if (alarmSetVal == HIGH) {
-    alarmSetMode = 1 - alarmSetMode;
-  }
-  if (minuteVal == HIGH) {
-    timeInMin++;
+  } else {
+    if (timeInSec == 60) {
+      timeInMin++;
+      timeInSec = timeInSec % 60;
+    }
+    if (timeInMin >= 60) {
+      timeInHr++;
+      timeInMin = timeInMin % 60;
+    }
+    if (timeInHr >= 24) {
+      timeInHr = 0;
+    }
+    lcd.setCursor(6, 1);
+    if (timeInHr < 10) {
+      lcd.print("0");
+    }
+    lcd.print(timeInHr);
+    lcd.print(":");
+    if (timeInMin < 10) {
+      lcd.print("0");
+    }
+    lcd.print(timeInMin);
+    lcd.print(":");
+    if (timeInSec < 10) {
+      lcd.print("0");
+    }
+    lcd.print(timeInSec);
+    if (minuteVal == HIGH) {
+      timeInMin++;
+      if (helperVal % 5 == 0) {
+        timeInSec--;
+      }
+      timeInHr = timeInHr;
+      Serial.println("Minute pressed");
+    }
+    if (hourVal == HIGH) {
+      timeInMin = timeInMin;
+      if (helperVal % 5 == 0) {
+        timeInSec--;
+      }
+      timeInHr++;
+      Serial.println("Hour pressed");
+    }
+    helperVal++;
     if (helperVal % 5 == 0) {
-      timeInSec--;
+      timeInSec++;
     }
-    timeInHr = timeInHr;
-    Serial.println("Minute pressed");
-  }
-  if (hourVal == HIGH) {
-    timeInMin = timeInMin;
-    if (helperVal % 5 == 0) {
-      timeInSec--;
-    }
-    timeInHr++;
-    Serial.println("Hour pressed");
-  }
-  helperVal++;
-  if (helperVal % 5 == 0) {
-    timeInSec++;
-  }
-  if (alarmArmed) {
-    lcd.setCursor(0, 0);
-    lcd.print("A");
-    if (timeInMin == alarmMinVal && timeInHr == alarmHrVal) {
-      passCodeIsRight = false;
+    if (alarmArmed) {
+      lcd.setCursor(0, 0);
+      lcd.print("A");
+      if (timeInMin == alarmMinVal && timeInHr == alarmHrVal) {
+        passCodeIsRight = false;
+      }
     }
   }
+
   soundAlarmAndDisplayCodeRequest();
   delay(200);
   Serial.print("Alarm time: ");
