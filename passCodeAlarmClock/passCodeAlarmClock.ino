@@ -1,24 +1,27 @@
+#include <Key.h>
+
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <EEPROM.h>
 #include <Keypad.h>
+#include <string.h>
 
-const int numRows = 4;
-const int numCols = 4;
+const byte numRows = 4;
+const byte numCols = 4;
 char keys[numRows][numCols] = {
-  {'1','2','3','A'},
-  {'4','5','6','B'},
-  {'7','8','9','C'},
-  {'*','0','#','D'},
-}
-int rowPin[numRows] = {9,8,7,6};
-int colPin[numCols] = {5,4,3,2};
+  {'1', '2', '3', 'A'},
+  {'4', '5', '6', 'B'},
+  {'7', '8', '9', 'C'},
+  {'*', '0', '#', 'D'},
+};
+byte rowPin[numRows] = {9, 8, 7, 6};
+byte colPin[numCols] = {5, 4, 3, 2};
 Keypad passcodekeypad = Keypad(makeKeymap(keys), rowPin, colPin, numRows, numCols);
 
 int helperVal = 0;
 int hours = 0;
 int minutes = 0;
-int alarmSetMode;
+int alarmSetMode, passcodeSetMode;
 bool alarmArmed;
 bool passCodeIsRight = true;
 int minuteVal, hourVal, alarmSetVal;
@@ -28,6 +31,7 @@ const int minuteButton = 12;
 const int hourButton = 11;
 const int alarmSetButton = 10;
 unsigned long timeToPass;
+String passcodeToDisable;
 LiquidCrystal_I2C lcd(0x27, 20, 4); //
 
 void setup() {
@@ -83,77 +87,93 @@ void setAlarmTime(int minSet, int hrSet) {
   lcd.print("SET ALARM MODE");
 }
 
+void setPasscode() {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Set code: ");
+  char firstKey = passcodekeypad.getKey();
+  passcodeToDisable += firstKey;
+}
+
 void loop() {
+  lcd.clear();
   minuteVal = digitalRead(minuteButton);
   hourVal = digitalRead(hourButton);
   alarmSetVal = digitalRead(alarmSetButton);
-  lcd.clear();
-  if (alarmSetVal == HIGH) {
-    alarmSetMode = 1 - alarmSetMode;
+  char firstKey = passcodekeypad.getKey();
+  if (firstKey == '#') {
+    passcodeSetMode = 1 - passcodeSetMode;
   }
-  if (alarmSetMode == 1) {
-    timeInHr = timeInHr;
-    timeInMin = timeInMin;
-    setAlarmTime(minuteVal, hourVal);
-    if (alarmSetVal == HIGH) {
-      if (!alarmArmed) {
-        alarmArmed = true;
-      } else {
-        alarmArmed = false;
-      }
-    }
+  if (passcodeSetMode == 1) {
+    setPasscode();
   } else {
-    if (timeInSec == 60) {
-      timeInMin++;
-      timeInSec = timeInSec % 60;
+    if (alarmSetVal == HIGH) {
+      alarmSetMode = 1 - alarmSetMode;
     }
-    if (timeInMin >= 60) {
-      timeInHr++;
-      timeInMin = timeInMin % 60;
-    }
-    if (timeInHr >= 24) {
-      timeInHr = 0;
-    }
-    lcd.setCursor(6, 1);
-    if (timeInHr < 10) {
-      lcd.print("0");
-    }
-    lcd.print(timeInHr);
-    lcd.print(":");
-    if (timeInMin < 10) {
-      lcd.print("0");
-    }
-    lcd.print(timeInMin);
-    lcd.print(":");
-    if (timeInSec < 10) {
-      lcd.print("0");
-    }
-    lcd.print(timeInSec);
-    if (minuteVal == HIGH) {
-      timeInMin++;
-      if (helperVal % 5 == 0) {
-        timeInSec--;
-      }
+    if (alarmSetMode == 1) {
       timeInHr = timeInHr;
-      Serial.println("Minute pressed");
-    }
-    if (hourVal == HIGH) {
       timeInMin = timeInMin;
-      if (helperVal % 5 == 0) {
-        timeInSec--;
+      setAlarmTime(minuteVal, hourVal);
+      if (alarmSetVal == HIGH) {
+        if (!alarmArmed) {
+          alarmArmed = true;
+        } else {
+          alarmArmed = false;
+        }
       }
-      timeInHr++;
-      Serial.println("Hour pressed");
-    }
-    helperVal++;
-    if (helperVal % 5 == 0) {
-      timeInSec++;
-    }
-    if (alarmArmed) {
-      lcd.setCursor(0, 0);
-      lcd.print("A");
-      if (timeInMin == alarmMinVal && timeInHr == alarmHrVal) {
-        passCodeIsRight = false;
+    } else {
+      if (timeInSec == 60) {
+        timeInMin++;
+        timeInSec = timeInSec % 60;
+      }
+      if (timeInMin >= 60) {
+        timeInHr++;
+        timeInMin = timeInMin % 60;
+      }
+      if (timeInHr >= 24) {
+        timeInHr = 0;
+      }
+      lcd.setCursor(6, 1);
+      if (timeInHr < 10) {
+        lcd.print("0");
+      }
+      lcd.print(timeInHr);
+      lcd.print(":");
+      if (timeInMin < 10) {
+        lcd.print("0");
+      }
+      lcd.print(timeInMin);
+      lcd.print(":");
+      if (timeInSec < 10) {
+        lcd.print("0");
+      }
+      lcd.print(timeInSec);
+      if (minuteVal == HIGH) {
+        timeInMin++;
+        if (helperVal % 5 == 0) {
+          timeInSec--;
+        }
+        timeInHr = timeInHr;
+        Serial.println("Minute pressed");
+      }
+      if (hourVal == HIGH) {
+        timeInMin = timeInMin;
+        if (helperVal % 5 == 0) {
+          timeInSec--;
+        }
+        timeInHr++;
+        Serial.println("Hour pressed");
+      }
+      helperVal++;
+      if (helperVal % 5 == 0) {
+        timeInSec++;
+      }
+      if (alarmArmed) {
+        lcd.setCursor(0, 0);
+        lcd.print("A");
+        if (timeInMin == alarmMinVal && timeInHr == alarmHrVal) {
+          passCodeIsRight = false;
+        }
       }
     }
   }
@@ -170,4 +190,6 @@ void loop() {
   Serial.println(timeInMin);
   Serial.print("Alarm Armed: ");
   Serial.println(alarmArmed);
+  Serial.print("Passcode: ");
+  Serial.println(passcodeToDisable);
 }
