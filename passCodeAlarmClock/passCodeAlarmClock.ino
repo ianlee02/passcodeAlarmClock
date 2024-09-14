@@ -5,7 +5,8 @@
 int helperVal = 0;
 int hours = 0;
 int minutes = 0;
-bool alarmSetMode, alarmArmed;
+int alarmSetMode;
+bool alarmArmed;
 bool passCodeIsRight = true;
 int minuteVal, hourVal, alarmSetVal;
 int alarmMinVal, alarmHrVal;
@@ -74,6 +75,18 @@ void loop() {
   hourVal = digitalRead(hourButton);
   alarmSetVal = digitalRead(alarmSetButton);
   lcd.clear();
+  if (alarmSetMode == 1) {
+    timeInHr = timeInHr;
+    timeInMin = timeInMin;
+    setAlarmTime(minuteVal, hourVal);
+    if (alarmSetVal == HIGH) {
+      if (!alarmArmed) {
+        alarmArmed = true;
+      } else {
+        alarmArmed = false;
+      }
+    }
+  }
   if (timeInSec == 60) {
     timeInMin++;
     timeInSec = timeInSec % 60;
@@ -101,20 +114,7 @@ void loop() {
   }
   lcd.print(timeInSec);
   if (alarmSetVal == HIGH) {
-    alarmSetMode = true;
-    while (alarmSetMode) {
-      timeInHr = timeInHr;
-      timeInMin = timeInMin;
-      setAlarmTime(minuteVal, hourVal);
-      if (alarmSetVal == HIGH) {
-        if (!alarmArmed) {
-          alarmArmed = true;
-        } else {
-          alarmArmed = false;
-        }
-        break;
-      }
-    }
+    alarmSetMode = 1 - alarmSetMode;
   }
   if (minuteVal == HIGH) {
     timeInMin++;
