@@ -34,12 +34,35 @@ unsigned long timeToPass;
 String passcodeToDisable;
 LiquidCrystal_I2C lcd(0x27, 20, 4); //
 
+void savePasscode(int startingAddress, String &passcodeToSave) {
+  byte lengthOfCode = passcodeToSave.length(); // Gets the length of the code to know how long it is for when we read it after power loss.
+  EEPROM.write(startingAddress, lengthOfCode); // Saves the
+
+  for (int i = 0; i < lengthOfCode; i++) {
+    EEPROM.write(startingAddress + i + 1, passcodeToSave[i]);
+  }
+}
+
+String readSavedPasscode(int savedAddress) {
+  int lenOfCode = EEPROM.read(savedAddress);
+  char saveCode[lenOfCode + 1];
+
+  for (int j = 0; j < lenOfCode; j++) {
+    saveCode[j] = EEPROM.read(savedAddress + j + 1);
+  }
+  saveCode[lenOfCode] = '\0';
+  return String(saveCode);
+
+}
+
 void setup() {
   Serial.begin(9600);
   pinMode(minuteButton, INPUT);
   pinMode(hourButton, INPUT);
   pinMode(alarmSetButton, INPUT);
   lcd.begin();
+  alarmHrVal = EEPROM.read(1000);
+  alarmMinVal = EEPROM.read(1001);
 }
 
 void displayWarningAndSoundAlarm() {
@@ -71,11 +94,11 @@ void setAlarmTime(int minSet, int hrSet) {
     lcd.clear();
     timeInMin = timeInMin;
   }
-  if (alarmMinVal == 60) {
+  if (alarmMinVal >= 60) {
     alarmHrVal++;
     alarmMinVal = 0;
   }
-  if (alarmHrVal == 24) {
+  if (alarmHrVal >= 24) {
     alarmHrVal = 0;
   }
   if (hrSet == 1) {
@@ -85,18 +108,26 @@ void setAlarmTime(int minSet, int hrSet) {
   }
   lcd.setCursor(6, 2);
   lcd.print("SET ALARM MODE");
+  EEPROM.write(1000, alarmHrVal);
+  EEPROM.write(1001, alarmMinVal);
 }
 
-void setPasscode() {
+void setPasscode(char enteredKey) {
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Set code: ");
-  char firstKey = passcodekeypad.getKey();
-  passcodeToDisable += firstKey;
+  if (enteredKey != '#') {
+    passcodeToDisable += enteredKey;
+  }
+  if (enteredKey == '*') {
+    passcodeToDisable = "";
+  }
+  savePasscode(0, passcodeToDisable);
 }
 
 void loop() {
   lcd.clear();
+  passcodeToDisable = readSavedPasscode(0);
   minuteVal = digitalRead(minuteButton);
   hourVal = digitalRead(hourButton);
   alarmSetVal = digitalRead(alarmSetButton);
@@ -105,7 +136,7 @@ void loop() {
     passcodeSetMode = 1 - passcodeSetMode;
   }
   if (passcodeSetMode == 1) {
-    setPasscode();
+    setPasscode(firstKey);
   } else {
     if (alarmSetVal == HIGH) {
       alarmSetMode = 1 - alarmSetMode;
@@ -192,4 +223,5 @@ void loop() {
   Serial.println(alarmArmed);
   Serial.print("Passcode: ");
   Serial.println(passcodeToDisable);
+
 }
