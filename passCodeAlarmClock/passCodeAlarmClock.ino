@@ -24,6 +24,7 @@ int minutes = 0;
 int alarmSetMode, passcodeSetMode;
 bool alarmArmed;
 bool passCodeIsRight = true;
+bool passCodeEntered = true;
 int minuteVal, hourVal, alarmSetVal;
 int alarmMinVal, alarmHrVal;
 int timeInMin, timeInHr, timeInSec;
@@ -32,6 +33,9 @@ const int hourButton = 11;
 const int alarmSetButton = 10;
 unsigned long timeToPass;
 String passcodeToDisable;
+String verifyCode;
+String hashBeforeCode, promptedCode;
+int verifyMode = 1;
 LiquidCrystal_I2C lcd(0x27, 20, 4); //
 
 void savePasscode(int startingAddress, String &passcodeToSave) {
@@ -70,11 +74,7 @@ void displayWarningAndSoundAlarm() {
   lcd.print("ENTER PASSCODE");
 }
 
-void soundAlarmAndDisplayCodeRequest() {
-  if (!passCodeIsRight) {
-    lcd.setCursor(0, 3);
-    lcd.print("Enter Passcode");
-  }
+void soundAlarmAndDisplayCodeRequest(char codeEntered) {
 }
 
 void setAlarmTime(int minSet, int hrSet) {
@@ -198,30 +198,60 @@ void loop() {
       helperVal++;
       if (helperVal % 5 == 0) {
         timeInSec++;
+        /*
+          Serial.print("Alarm time: ");
+          Serial.print(alarmHrVal);
+          Serial.print(":");
+          Serial.println(alarmMinVal);
+          Serial.print("Real time: ");
+          Serial.print(timeInHr);
+          Serial.print(":");
+          Serial.println(timeInMin);
+          Serial.print("Alarm Armed: ");
+          Serial.println(alarmArmed);
+          Serial.print("Passcode: ");
+          Serial.println(passcodeToDisable);
+        */
       }
       if (alarmArmed) {
         lcd.setCursor(0, 0);
         lcd.print("A");
         if (timeInMin == alarmMinVal && timeInHr == alarmHrVal) {
           passCodeIsRight = false;
+          passCodeEntered = false;
         }
+        if (timeInMin == alarmMinVal + 1) {
+          passCodeEntered = true;
+        }
+      }
+      if (!passCodeIsRight || !passCodeEntered) {
+        Serial.print("Passcode entered: ");
+        Serial.println(passCodeEntered);
+        Serial.print("PassCode is right: ");
+        Serial.println(passCodeIsRight);
+        promptedCode += firstKey;
+        if (firstKey == '*') {
+          promptedCode = "";
+          passCodeIsRight = true;
+          passCodeEntered = true;
+        }
+        Serial.print("Set code: ");
+        Serial.println(passcodeToDisable);
+        Serial.print("Entered code: ");
+        Serial.println(promptedCode);
+        lcd.setCursor(0, 3);
+        lcd.print("Enter Passcode");
+        if (passcodeToDisable == promptedCode) {
+          promptedCode = "";
+          passCodeIsRight = true;
+          passCodeEntered = true;
+        }
+      } else {
+        lcd.setCursor(0, 3);
+        lcd.print("");
       }
     }
   }
 
-  soundAlarmAndDisplayCodeRequest();
   delay(200);
-  Serial.print("Alarm time: ");
-  Serial.print(alarmHrVal);
-  Serial.print(":");
-  Serial.println(alarmMinVal);
-  Serial.print("Real time: ");
-  Serial.print(timeInHr);
-  Serial.print(":");
-  Serial.println(timeInMin);
-  Serial.print("Alarm Armed: ");
-  Serial.println(alarmArmed);
-  Serial.print("Passcode: ");
-  Serial.println(passcodeToDisable);
-
 }
