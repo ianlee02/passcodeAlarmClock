@@ -38,6 +38,8 @@ String hashBeforeCode, promptedCode;
 int verifyMode = 1;
 LiquidCrystal_I2C lcd(0x27, 20, 4); //
 
+unsigned long timeForCycle, beginTime;
+
 void savePasscode(int startingAddress, String &passcodeToSave) {
   byte lengthOfCode = passcodeToSave.length(); // Gets the length of the code to know how long it is for when we read it after power loss.
   EEPROM.write(startingAddress, lengthOfCode); // Saves the
@@ -127,6 +129,7 @@ void setPasscode(char enteredKey) {
 
 void loop() {
   lcd.clear();
+  beginTime = millis();
   passcodeToDisable = readSavedPasscode(0);
   minuteVal = digitalRead(minuteButton);
   hourVal = digitalRead(hourButton);
@@ -138,14 +141,14 @@ void loop() {
   if (passcodeSetMode == 1) {
     setPasscode(firstKey);
   } else {
-    if (alarmSetVal == HIGH) {
+    if (alarmSetVal == HIGH || firstKey == 'A') {
       alarmSetMode = 1 - alarmSetMode;
     }
     if (alarmSetMode == 1) {
       timeInHr = timeInHr;
       timeInMin = timeInMin;
       setAlarmTime(minuteVal, hourVal);
-      if (alarmSetVal == HIGH) {
+      if (alarmSetVal == HIGH || firstKey == 'A') {
         if (!alarmArmed) {
           alarmArmed = true;
         } else {
@@ -198,20 +201,20 @@ void loop() {
       helperVal++;
       if (helperVal % 5 == 0) {
         timeInSec++;
-        
-          Serial.print("Alarm time: ");
-          Serial.print(alarmHrVal);
-          Serial.print(":");
-          Serial.println(alarmMinVal);
-          Serial.print("Real time: ");
-          Serial.print(timeInHr);
-          Serial.print(":");
-          Serial.println(timeInMin);
-          Serial.print("Alarm Armed: ");
-          Serial.println(alarmArmed);
-          Serial.print("Passcode: ");
-          Serial.println(passcodeToDisable);
-        
+
+        Serial.print("Alarm time: ");
+        Serial.print(alarmHrVal);
+        Serial.print(":");
+        Serial.println(alarmMinVal);
+        Serial.print("Real time: ");
+        Serial.print(timeInHr);
+        Serial.print(":");
+        Serial.println(timeInMin);
+        Serial.print("Alarm Armed: ");
+        Serial.println(alarmArmed);
+        Serial.print("Passcode: ");
+        Serial.println(passcodeToDisable);
+
       }
       if (alarmArmed) {
         lcd.setCursor(0, 0);
@@ -230,6 +233,7 @@ void loop() {
         Serial.println(passCodeEntered);
         Serial.print("PassCode is right: ");
         Serial.println(passCodeIsRight);
+        Serial.println("PASSCODE INCORRECT!");
         if (firstKey == '*') {
           promptedCode = "";
         }
@@ -248,5 +252,9 @@ void loop() {
     }
   }
 
-  delay(200);
+  delay(185);
+  timeForCycle = millis() - beginTime;
+  Serial.print("Time taken: ");
+  Serial.print(timeForCycle);
+  Serial.println(" ms");
 }
