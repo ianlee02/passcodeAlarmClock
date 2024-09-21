@@ -198,7 +198,7 @@ void loop() {
       helperVal++;
       if (helperVal % 5 == 0) {
         timeInSec++;
-        /*
+        
           Serial.print("Alarm time: ");
           Serial.print(alarmHrVal);
           Serial.print(":");
@@ -211,7 +211,7 @@ void loop() {
           Serial.println(alarmArmed);
           Serial.print("Passcode: ");
           Serial.println(passcodeToDisable);
-        */
+        
       }
       if (alarmArmed) {
         lcd.setCursor(0, 0);
@@ -225,15 +225,13 @@ void loop() {
         }
       }
       if (!passCodeIsRight || !passCodeEntered) {
+        promptedCode += firstKey;
         Serial.print("Passcode entered: ");
         Serial.println(passCodeEntered);
         Serial.print("PassCode is right: ");
         Serial.println(passCodeIsRight);
-        promptedCode += firstKey;
         if (firstKey == '*') {
           promptedCode = "";
-          passCodeIsRight = true;
-          passCodeEntered = true;
         }
         Serial.print("Set code: ");
         Serial.println(passcodeToDisable);
@@ -246,9 +244,6 @@ void loop() {
           passCodeIsRight = true;
           passCodeEntered = true;
         }
-      } else {
-        lcd.setCursor(0, 3);
-        lcd.print("");
       }
     }
   }
