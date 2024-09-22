@@ -34,6 +34,7 @@ const int alarmSetButton = 10;
 unsigned long timeToPass;
 String passcodeToDisable;
 String verifyCode;
+int verifyLetter;
 String hashBeforeCode, promptedCode;
 int verifyMode = 1;
 LiquidCrystal_I2C lcd(0x27, 20, 4); //
@@ -76,7 +77,11 @@ void displayWarningAndSoundAlarm() {
   lcd.print("ENTER PASSCODE");
 }
 
-void soundAlarmAndDisplayCodeRequest(char codeEntered) {
+void soundAlarmAndDisplayCodeRequest() {
+}
+
+void noSoundAlarm() {
+  
 }
 
 void setAlarmTime(int minSet, int hrSet) {
@@ -219,7 +224,7 @@ void loop() {
       if (alarmArmed) {
         lcd.setCursor(0, 0);
         lcd.print("A");
-        if (timeInMin == alarmMinVal && timeInHr == alarmHrVal) {
+        if (timeInMin == alarmMinVal && timeInHr == alarmHrVal && timeInSec == 0) {
           passCodeIsRight = false;
           passCodeEntered = false;
         }
@@ -228,31 +233,27 @@ void loop() {
         }
       }
       if (!passCodeIsRight || !passCodeEntered) {
-        promptedCode += firstKey;
-        Serial.print("Passcode entered: ");
-        Serial.println(passCodeEntered);
-        Serial.print("PassCode is right: ");
-        Serial.println(passCodeIsRight);
+        Serial.print("Passcode entered length: ");
+        Serial.println(verifyLetter);
+        Serial.print("PassCode is right length: ");
+        Serial.println(passcodeToDisable.length());
         Serial.println("PASSCODE INCORRECT!");
-        if (firstKey == '*') {
-          promptedCode = "";
+        if (firstKey == passcodeToDisable[verifyLetter]) {
+          verifyLetter++;
         }
-        Serial.print("Set code: ");
-        Serial.println(passcodeToDisable);
-        Serial.print("Entered code: ");
-        Serial.println(promptedCode);
         lcd.setCursor(0, 3);
         lcd.print("Enter Passcode");
-        if (passcodeToDisable == promptedCode) {
-          promptedCode = "";
+        if (verifyLetter == passcodeToDisable.length()) {
+          verifyLetter = 0;
           passCodeIsRight = true;
           passCodeEntered = true;
+          Serial.println("PASSCODE IS CORRECT!!");
         }
       }
     }
   }
 
-  delay(185);
+  delay(178);
   timeForCycle = millis() - beginTime;
   Serial.print("Time taken: ");
   Serial.print(timeForCycle);
