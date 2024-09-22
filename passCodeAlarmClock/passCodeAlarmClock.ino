@@ -17,6 +17,7 @@ char keys[numRows][numCols] = {
 byte rowPin[numRows] = {9, 8, 7, 6};
 byte colPin[numCols] = {5, 4, 3, 2};
 Keypad passcodekeypad = Keypad(makeKeymap(keys), rowPin, colPin, numRows, numCols);
+int buzzer = 13;
 
 int helperVal = 0;
 int hours = 0;
@@ -67,6 +68,7 @@ void setup() {
   pinMode(minuteButton, INPUT);
   pinMode(hourButton, INPUT);
   pinMode(alarmSetButton, INPUT);
+  pinMode(buzzer, OUTPUT);
   lcd.begin();
   alarmHrVal = EEPROM.read(1000);
   alarmMinVal = EEPROM.read(1001);
@@ -78,13 +80,19 @@ void displayWarningAndSoundAlarm() {
 }
 
 void soundAlarmAndDisplayCodeRequest() {
+  tone(buzzer, 1000);
+  delay(70);
+  noTone(buzzer);
+  delay(70);
+  tone(buzzer, 1500);
 }
 
 void noSoundAlarm() {
-  
+  noTone(buzzer);
 }
 
 void setAlarmTime(int minSet, int hrSet) {
+  noSoundAlarm();
   lcd.clear();
   lcd.setCursor(6, 1);
   if (alarmHrVal < 10) {
@@ -233,6 +241,7 @@ void loop() {
         }
       }
       if (!passCodeIsRight || !passCodeEntered) {
+        soundAlarmAndDisplayCodeRequest();
         Serial.print("Passcode entered length: ");
         Serial.println(verifyLetter);
         Serial.print("PassCode is right length: ");
@@ -249,6 +258,8 @@ void loop() {
           passCodeEntered = true;
           Serial.println("PASSCODE IS CORRECT!!");
         }
+      } else {
+        noSoundAlarm();
       }
     }
   }
