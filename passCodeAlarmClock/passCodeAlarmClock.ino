@@ -4,6 +4,7 @@
 #include <LiquidCrystal_I2C.h>
 #include <EEPROM.h>
 #include <Keypad.h>
+#include <DS3231.h>
 #include <string.h>
 
 const byte numRows = 4;
@@ -39,6 +40,8 @@ int verifyLetter;
 String hashBeforeCode, promptedCode;
 int verifyMode = 1;
 LiquidCrystal_I2C lcd(0x27, 20, 4); //
+DS3231 Clock;
+RTCDateTime dt;
 
 unsigned long timeForCycle, beginTime;
 
@@ -72,6 +75,9 @@ void setup() {
   lcd.begin();
   alarmHrVal = EEPROM.read(1000);
   alarmMinVal = EEPROM.read(1001);
+  Serial.println("Initialize DS3231");;
+  Clock.begin();
+  Clock.setDateTime(__DATE__, __TIME__);
 }
 
 void displayWarningAndSoundAlarm() {
@@ -128,6 +134,7 @@ void setAlarmTime(int minSet, int hrSet) {
 }
 
 void setPasscode(char enteredKey) {
+  dt = Clock.getDateTime();
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Set code: ");
@@ -141,6 +148,7 @@ void setPasscode(char enteredKey) {
 }
 
 void loop() {
+  dt = Clock.getDateTime();
   lcd.clear();
   beginTime = millis();
   passcodeToDisable = readSavedPasscode(0);
@@ -169,48 +177,21 @@ void loop() {
         }
       }
     } else {
-      if (timeInSec == 60) {
-        timeInMin++;
-        timeInSec = timeInSec % 60;
-      }
-      if (timeInMin >= 60) {
-        timeInHr++;
-        timeInMin = timeInMin % 60;
-      }
-      if (timeInHr >= 24) {
-        timeInHr = 0;
-      }
       lcd.setCursor(6, 1);
-      if (timeInHr < 10) {
+      if (dt.hour < 10) {
         lcd.print("0");
       }
-      lcd.print(timeInHr);
+      lcd.print(dt.hour);
       lcd.print(":");
-      if (timeInMin < 10) {
+      if (dt.minute < 10) {
         lcd.print("0");
       }
-      lcd.print(timeInMin);
+      lcd.print(dt.minute);
       lcd.print(":");
-      if (timeInSec < 10) {
+      if (dt.second < 10) {
         lcd.print("0");
       }
-      lcd.print(timeInSec);
-      if (minuteVal == HIGH) {
-        timeInMin++;
-        if (helperVal % 5 == 0) {
-          timeInSec--;
-        }
-        timeInHr = timeInHr;
-        Serial.println("Minute pressed");
-      }
-      if (hourVal == HIGH) {
-        timeInMin = timeInMin;
-        if (helperVal % 5 == 0) {
-          timeInSec--;
-        }
-        timeInHr++;
-        Serial.println("Hour pressed");
-      }
+      lcd.print(dt.second);
       helperVal++;
       if (helperVal % 5 == 0) {
         timeInSec++;
@@ -220,9 +201,9 @@ void loop() {
         Serial.print(":");
         Serial.println(alarmMinVal);
         Serial.print("Real time: ");
-        Serial.print(timeInHr);
+        Serial.print(dt.hour);
         Serial.print(":");
-        Serial.println(timeInMin);
+        Serial.println(dt.minute);
         Serial.print("Alarm Armed: ");
         Serial.println(alarmArmed);
         Serial.print("Passcode: ");
@@ -232,7 +213,7 @@ void loop() {
       if (alarmArmed) {
         lcd.setCursor(0, 0);
         lcd.print("A");
-        if (timeInMin == alarmMinVal && timeInHr == alarmHrVal && timeInSec == 0) {
+        if (dt.minute == alarmMinVal && dt.hour == alarmHrVal && dt.second == 0) {
           passCodeIsRight = false;
           passCodeEntered = false;
         }
@@ -264,7 +245,7 @@ void loop() {
     }
   }
 
-  delay(178);
+  delay(100);
   timeForCycle = millis() - beginTime;
   Serial.print("Time taken: ");
   Serial.print(timeForCycle);
