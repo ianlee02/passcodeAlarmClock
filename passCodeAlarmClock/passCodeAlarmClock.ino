@@ -223,7 +223,6 @@ void loop() {
         }
       }
       if (!passCodeIsRight || !passCodeEntered) {
-        soundAlarmAndDisplayCodeRequest();
         Serial.print("Passcode entered length: ");
         Serial.println(verifyLetter);
         Serial.print("PassCode is right length: ");
@@ -234,6 +233,7 @@ void loop() {
         }
         lcd.setCursor(0, 3);
         lcd.print("Enter Passcode");
+        soundAlarmAndDisplayCodeRequest();
         if (verifyLetter == passcodeToDisable.length()) {
           verifyLetter = 0;
           passCodeIsRight = true;
