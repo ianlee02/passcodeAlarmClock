@@ -39,11 +39,12 @@ String verifyCode;
 int verifyLetter;
 String hashBeforeCode, promptedCode;
 int verifyMode = 1;
+int blinkHelper = 1;
 LiquidCrystal_I2C lcd(0x27, 20, 4); //
 RTC_DS3231 timerKeeper;
 DateTime currentTime;
 
-unsigned long timeForCycle, beginTime;
+unsigned long timeForCycle, beginTime, timerVal;
 
 void savePasscode(int startingAddress, String &passcodeToSave) {
   byte lengthOfCode = passcodeToSave.length(); // Gets the length of the code to know how long it is for when we read it after power loss.
@@ -80,6 +81,9 @@ void setup() {
   if (timerKeeper.lostPower()) {
     timerKeeper.adjust(DateTime(F(__DATE__), F(__TIME__)));
   }
+  currentTime = timerKeeper.now();
+  minuteVal = currentTime.minute();
+  hourVal = currentTime.hour();
 }
 
 void displayWarningAndSoundAlarm() {
@@ -89,9 +93,9 @@ void displayWarningAndSoundAlarm() {
 
 void soundAlarmAndDisplayCodeRequest() {
   tone(buzzer, 1000);
-  delay(70);
+  delay(140);
   noTone(buzzer);
-  delay(70);
+  delay(140);
   tone(buzzer, 1500);
 }
 
@@ -149,7 +153,18 @@ void setPasscode(char enteredKey) {
 }
 
 void loop() {
-  currentTime = timerKeeper.now();
+  timeInSec = currentTime.second();
+  if ((millis() - timerVal) > 499) {
+    timerVal = millis();
+    if (blinkHelper == 0) {
+      blinkHelper = 1;
+      currentTime = timerKeeper.now();
+      timeInMin = currentTime.minute();
+      timeInHr = currentTime.hour();
+    } else {
+      blinkHelper = 0;
+    }
+  }
   lcd.clear();
   beginTime = millis();
   passcodeToDisable = readSavedPasscode(0);
@@ -178,21 +193,45 @@ void loop() {
         }
       }
     } else {
+      if (minuteVal == 1) {
+        timerVal = 0;
+        timeInMin++;
+        if (timeInMin >= 60) {
+          timeInMin = 0;
+        }
+        timerKeeper.adjust(DateTime(currentTime.year(), currentTime.month(), currentTime.day(), timeInHr, timeInMin, 0));
+      }
+      if (hourVal == 1) {
+        timerVal = 0;
+        timeInHr++;
+        if (timeInHr >= 24) {
+          timeInMin = 0;
+        }
+        timerKeeper.adjust(DateTime(currentTime.year(), currentTime.month(), currentTime.day(), timeInHr, timeInMin, 0));
+      }
       lcd.setCursor(6, 1);
-      if (currentTime.hour() < 10) {
+      if (timeInHr < 10) {
         lcd.print("0");
       }
-      lcd.print(currentTime.hour());
+      lcd.print(timeInHr);
       lcd.print(":");
-      if (currentTime.minute() < 10) {
+      if (timeInMin < 10) {
         lcd.print("0");
       }
-      lcd.print(currentTime.minute());
+      lcd.print(timeInMin);
       lcd.print(":");
-      if (currentTime.second() < 10) {
+      if (timeInSec < 10) {
         lcd.print("0");
       }
-      lcd.print(currentTime.second());
+      lcd.print(timeInSec);
+      if (timeInSec >= 60) {
+        timeInMin++;
+        timeInSec = 0;
+      }
+      if (timeInMin >= 60) {
+        timeInHr++;
+        timeInMin = 0;
+      }
       helperVal++;
       if (helperVal % 5 == 0) {
         timeInSec++;
@@ -214,7 +253,7 @@ void loop() {
       if (alarmArmed) {
         lcd.setCursor(0, 0);
         lcd.print("A");
-        if (currentTime.minute() == alarmMinVal && currentTime.hour() == alarmHrVal && currentTime.second() == 0) {
+        if (timeInMin == alarmMinVal && timeInHr == alarmHrVal && currentTime.second() <= 2) {
           passCodeIsRight = false;
           passCodeEntered = false;
         }
@@ -246,7 +285,7 @@ void loop() {
     }
   }
 
-  delay(100);
+  delay(20);
   timeForCycle = millis() - beginTime;
   Serial.print("Time taken: ");
   Serial.print(timeForCycle);
