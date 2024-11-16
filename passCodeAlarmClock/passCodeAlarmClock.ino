@@ -122,7 +122,6 @@ void setAlarmTime(int minSet, int hrSet) {
     timeInMin = timeInMin;
   }
   if (alarmMinVal >= 60) {
-    alarmHrVal++;
     alarmMinVal = 0;
   }
   if (alarmHrVal >= 24) {
@@ -285,7 +284,7 @@ void loop() {
     }
   }
 
-  delay(20);
+  delay(60);
   timeForCycle = millis() - beginTime;
   Serial.print("Time taken: ");
   Serial.print(timeForCycle);
