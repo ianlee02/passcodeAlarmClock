@@ -9,6 +9,7 @@
 
 const byte numRows = 4;
 const byte numCols = 4;
+// Setting the keypad to its values
 char keys[numRows][numCols] = {
   {'1', '2', '3', 'A'},
   {'4', '5', '6', 'B'},
@@ -48,19 +49,19 @@ unsigned long timeForCycle, beginTime, timerVal;
 
 void savePasscode(int startingAddress, String &passcodeToSave) {
   byte lengthOfCode = passcodeToSave.length(); // Gets the length of the code to know how long it is for when we read it after power loss.
-  EEPROM.write(startingAddress, lengthOfCode); // Saves the
+  EEPROM.write(startingAddress, lengthOfCode); // Saves the value of the code length to 
 
   for (int i = 0; i < lengthOfCode; i++) {
-    EEPROM.write(startingAddress + i + 1, passcodeToSave[i]);
+    EEPROM.write(startingAddress + i + 1, passcodeToSave[i]); // Write each character of the string into seperate addresses starting with the one right after the address with the code length.
   }
 }
 
 String readSavedPasscode(int savedAddress) {
-  int lenOfCode = EEPROM.read(savedAddress);
+  int lenOfCode = EEPROM.read(savedAddress); // Retrieve the length of the save passcode
   char saveCode[lenOfCode + 1];
 
   for (int j = 0; j < lenOfCode; j++) {
-    saveCode[j] = EEPROM.read(savedAddress + j + 1);
+    saveCode[j] = EEPROM.read(savedAddress + j + 1); // Add each character starting with the next avaliable address
   }
   saveCode[lenOfCode] = '\0';
   return String(saveCode);
@@ -252,7 +253,7 @@ void loop() {
       if (alarmArmed) {
         lcd.setCursor(0, 0);
         lcd.print("A");
-        if (timeInMin == alarmMinVal && timeInHr == alarmHrVal && currentTime.second() <= 2) {
+        if (timeInMin == alarmMinVal && timeInHr == alarmHrVal && currentTime.second() <= 2) { // The second value for the DS3231 has a time error or +- 2 sec
           passCodeIsRight = false;
           passCodeEntered = false;
         }
